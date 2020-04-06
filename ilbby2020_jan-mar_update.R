@@ -57,6 +57,8 @@ g + geom_bar(stat="identity", position="dodge") +
 
 # Map observations by county
 
+# Code uses the Urban Institute's urbnmapr package
+#   (https://medium.com/@urban_institute/how-to-create-state-and-county-maps-easily-in-r-577d29300bb2)
 # Load packages
 library(tidyverse)
 library(urbnmapr)
@@ -192,9 +194,13 @@ labs(title = "Illinois Botanists Big Year 2020: species by county")
 
 # Calendar heat map of flowering observations
 
-# Install tools to pull data, create calendar heat map
+# Install tools to pull data
 # install_github("pjhanly/iNatTools") 
 library(iNatTools)
+# Help file for iNat tool: https://pjhanly.github.io/iNat/iNat.html
+
+# Install tools for calendar heat map
+# Background: http://www.columbia.edu/~sg3637/blog/Time_Series_Heatmaps.html
 source("https://raw.githubusercontent.com/iascchen/VisHealth/master/R/calendarHeat.R")
 
 # Create teal color scheme
