@@ -35,13 +35,13 @@ g + geom_bar(stat="identity", position="dodge") +
               vjust=-0.25, size=3.5, color = "black") +
     theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
           panel.background = element_blank(), 
-          axis.line.y = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks.y = element_blank(),
           axis.line.x = element_blank(),
           axis.ticks.x = element_blank(),
-          axis.text=element_text(size = 10, color = "black"),
+          axis.text.x=element_text(size = 10, color = "black"),
           axis.title.x = element_blank(),
+          axis.line.y = element_blank(),
+          axis.ticks.y = element_blank(),
+          axis.text.y = element_blank(),
           axis.title.y = element_blank(),
           legend.position = 'bottom', 
           legend.text = element_text(size = 10, color = "Black"),
@@ -51,7 +51,7 @@ g + geom_bar(stat="identity", position="dodge") +
                       values = c("Observations" = "#61c9a8", 
                                  "Species" = "#428a73", 
                                  "Users" = "#295648")) +
-    ggtitle("January-March ILBBY participation, 2016-2020")    
+    ggtitle("January-March ILBBY participation, 2016-2020")
 
 #--------------------------------------------------------------
 
@@ -63,37 +63,38 @@ g + geom_bar(stat="identity", position="dodge") +
 library(tidyverse)
 library(urbnmapr)
 
-# Import data (iNat download)
-ilbby20 <- read.csv('observations-84136.csv')
-
-# Summarize obs by county
-obs1 <- ilbby20 %>%
-    mutate(place_state_name = "Illinois") %>%
-    mutate(place_county_name = recode(place_county_name, 
-                                      "DeWitt" = "De Witt", 
-                                      "De Kalb" = "DeKalb",
-                                      "La Salle" = "LaSalle")) %>%
-    mutate(x = 1, place_county_name = paste(place_county_name, "County")) %>% 
-    group_by(place_state_name, place_county_name) %>%
-    summarize(totobs = sum(x))
-
-# Join county-level summary table with urbanmapr
-obs2 <- full_join(obs1, counties, by = c('place_state_name' = 'state_name', 
-                                   'place_county_name' = 'county_name'))
-
-# Create map categories
-obs3 <- obs2 %>%
-    replace_na(list(totobs = 0)) %>%
-    mutate(obscat = cut(totobs, c(-1,0,9,99,999,9999)))
-
-
 # Filter urbanmapr county and state files
 states2 <- filter(states, state_name == 'Illinois')
 counties2 <- filter(counties, state_name == 'Illinois')
 
-# Create obs map
-obsmap <- obs3 %>%
+# Import data (iNat download)
+ilbby20 <- read.csv('observations-84136.csv')
+
+# Summarize obs by county, create dataset for map
+obs <- ilbby20 %>%
+    # Create state name variable for later merge, correct county name errors
+    mutate(place_state_name = "Illinois",
+           place_county_name = recode(place_county_name, 
+                                      "DeWitt" = "De Witt", 
+                                      "De Kalb" = "DeKalb",
+                                      "La Salle" = "LaSalle")) %>%
+    # Create dummy variable, append "County" to county variable for later merge
+    mutate(x = 1, place_county_name = paste(place_county_name, "County")) %>% 
+    # Summarize number of obs per county
+    group_by(place_state_name, place_county_name) %>%
+    summarize(totobs = sum(x)) %>%
+    # Join county-level summary table with urbanmapr county shapefile
+    full_join(counties, by = c('place_state_name' = 'state_name', 
+                                   'place_county_name' = 'county_name')) %>% 
+    # Filter to inculde only Illinois counties
     filter(place_state_name == 'Illinois') %>%
+    # Replace NA values with 0
+    replace_na(list(totobs = 0)) %>%
+    # Create map fill categories
+    mutate(obscat = cut(totobs, c(-1,0,9,99,999,9999)))
+
+# Create obs map
+obs_map <- obs %>%
     # Fill counties based on number of observations
     ggplot(mapping = aes(long, lat, group = group, fill = obscat)) + 
     geom_polygon(color = NA) +
@@ -105,10 +106,9 @@ obsmap <- obs3 %>%
                  fill = NA, color = "#000000", size = 0.05) +
     # Set map projection
     coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
-    # Set theme
-    theme_bw() +
-    # Adjust theme
-    theme(panel.border = element_blank(), 
+    # Adjust theme elements
+    theme(panel.background = element_blank(),
+          panel.border = element_blank(), 
           panel.grid.major = element_blank(), 
           axis.title.x = element_blank(), 
           axis.title.y = element_blank(), 
@@ -116,46 +116,49 @@ obsmap <- obs3 %>%
           axis.text.y = element_blank(), 
           axis.ticks.x = element_blank(), 
           axis.ticks.y = element_blank(),
-          legend.background = element_rect(fill="gray90", size=.5))
-
-# Select color palette, format legend
-obsmap + scale_fill_manual(values= c("White", "#64b59b", "#4a9b81", "#3a7965", "#295648"),
-                      guide = "legend",  
-                      name = "Research-grade \nplant observations", 
-                      labels = c("0","1-9", "10-99", "100-999", "1,000+")) +
+          legend.background = element_rect(fill="gray90")) +
+    # Select color palette, format legend
+    scale_fill_manual(values= c("White", "#64b59b", "#4a9b81", "#3a7965", "#295648"), 
+                           guide = "legend", 
+                           name = "Research-grade \nplant observations", 
+                           labels = c("0","1-9", "10-99", "100-999", "1,000+")) +
     # Add title
     labs(title = "Illinois Botanists Big Year 2020: observations by county")
+
+obs_map
 
 #--------------------------------------------------------------
 
 # Map species by county
 
-# Summarize species by county
-species1 <- ilbby20 %>%
-    mutate(place_state_name = "Illinois") %>%
-    mutate(place_county_name = recode(place_county_name, 
+# Summarize species by county, create dataset for map
+species <- ilbby20 %>%
+    # Create state name variable for later merge, correct county name errors
+    mutate(place_state_name = "Illinois",
+           place_county_name = recode(place_county_name, 
                                       "DeWitt" = "De Witt", 
                                       "De Kalb" = "DeKalb",
                                       "La Salle" = "LaSalle")) %>%
+    # Create dummy variable, append "County" to county variable for later merge
     mutate(x = 1, place_county_name = paste(place_county_name, "County")) %>% 
+    # Summarize number of species per county
     group_by(place_state_name, place_county_name, scientific_name) %>%
     summarize(totobs = sum(x)) %>%
     mutate(y = 1) %>%
     group_by(place_state_name, place_county_name) %>%
-    summarize(totspecies = sum(y)) 
-
-# Join county-level summary table with urbanmapr
-species2 <- full_join(species1, counties, by = c('place_state_name' = 'state_name', 
-                                                 'place_county_name' = 'county_name'))
-
-# Create map categories
-species3 <- species2 %>%
+    summarize(totspecies = sum(y)) %>% 
+    # Join county-level summary table with urbanmapr county shapefile
+    full_join(counties, by = c('place_state_name' = 'state_name', 
+                                                 'place_county_name' = 'county_name')) %>%
+    # Filter to inculde only Illinois counties
+    filter(place_state_name == 'Illinois') %>%
+    # Replace NA values with 0
     replace_na(list(totspecies = 0)) %>%
+    # Create map fill categories
     mutate(speciescat = cut(totspecies, c(-1,0,9,99,999)))
 
 # Create species map
-species_map <- species3 %>%
-    filter(place_state_name == 'Illinois') %>%
+species_map <- species %>%
     # Fill counties based on number of observations
     ggplot(mapping = aes(long, lat, group = group, fill = speciescat)) + 
     geom_polygon(color = NA) +
@@ -167,10 +170,9 @@ species_map <- species3 %>%
                  fill = NA, color = "#000000", size = 0.05) +
     # Set map projection
     coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
-    # Set theme
-    theme_bw() +
-    # Modify theme
-    theme(panel.border = element_blank(), 
+    # Modify theme elements
+    theme(panel.background = element_blank(),
+          panel.border = element_blank(), 
           panel.grid.major = element_blank(), 
           axis.title.x = element_blank(), 
           axis.title.y = element_blank(), 
@@ -178,18 +180,15 @@ species_map <- species3 %>%
           axis.text.y = element_blank(), 
           axis.ticks.x = element_blank(), 
           axis.ticks.y = element_blank(),
-          legend.background = element_rect(fill="gray90", size=.5))
-
-# Select color palette, format legend
-species_map + scale_fill_manual(values= c("White", "#64b59b", "#4a9b81", "#3a7965"),
-                                name = "Plant species with \nresearch-grade \nobservations", 
-                                labels = c("0", "1-9", "10-99", "100-999")) +
+          legend.background = element_rect(fill="gray90")) +
+    # Select color palette, format legend
+    scale_fill_manual(values= c("White", "#64b59b", "#4a9b81", "#3a7965"),
+                                    name = "Plant species with \nresearch-grade \nobservations", 
+                                    labels = c("0", "1-9", "10-99", "100-999")) +
+    # Add title
     labs(title = "Illinois Botanists Big Year 2020: species by county")
 
-# Add title
-labs(title = "Illinois Botanists Big Year 2020: species by county")
-
-
+species_map 
 #--------------------------------------------------------------
 
 # Calendar heat map of flowering observations
