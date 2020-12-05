@@ -1,3 +1,4 @@
+################################################################################
 # Purpose: Create maps and charts for ILBBY 2020 first quarter update
 # Input data: April 4, 2020 downloads from iNat
 # Output: 
@@ -6,13 +7,15 @@
 #   -Map of species by county
 #   -Calendar heat maps of flowering observations for 2016-2020
 # Date: April 4, 2020
-#--------------------------------------------------------------
-
-# Create bar chart showing ILBBY participation growth across years
+################################################################################
 
 # Load packages
 library(tidyverse)
 library(scales)
+library(urbnmapr)
+library(iNatTools)
+
+# Create bar chart showing ILBBY participation growth across years
 
 # Input Jan-March participation data (taken from iNat site)
 q1part <- data.frame(
@@ -31,9 +34,11 @@ q1part_long2 <- q1part_long %>%
 # Create bar chart
 g <- ggplot(q1part_long2, aes(x = Year, y = value, fill = fct_rev(pvar)))
 g + geom_bar(stat="identity", position="dodge") + 
-    geom_text(aes(label = comma(value)), position=position_dodge(width=0.9), 
+    geom_text(aes(label = comma(value)), 
+              position=position_dodge(width=0.9), 
               vjust=-0.25, size=3.5, color = "black") +
-    theme(panel.grid.major = element_blank(), panel.grid.minor = element_blank(),
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
           panel.background = element_blank(), 
           axis.line.x = element_blank(),
           axis.ticks.x = element_blank(),
@@ -59,9 +64,6 @@ g + geom_bar(stat="identity", position="dodge") +
 
 # Code uses the Urban Institute's urbnmapr package
 #   (https://medium.com/@urban_institute/how-to-create-state-and-county-maps-easily-in-r-577d29300bb2)
-# Load packages
-library(tidyverse)
-library(urbnmapr)
 
 # Filter urbanmapr county and state files
 states2 <- filter(states, state_name == 'Illinois')
@@ -78,20 +80,20 @@ obs <- ilbby20 %>%
                                       "DeWitt" = "De Witt", 
                                       "De Kalb" = "DeKalb",
                                       "La Salle" = "LaSalle")) %>%
-    # Create dummy variable, append "County" to county variable for later merge
-    mutate(x = 1, place_county_name = paste(place_county_name, "County")) %>% 
+    # Create indicator variable, append "County" to county variable for later merge
+    mutate(place_county_name = paste(place_county_name, "County")) %>% 
     # Summarize number of obs per county
     group_by(place_state_name, place_county_name) %>%
-    summarize(totobs = sum(x)) %>%
+    count(place_county_name) %>%
     # Join county-level summary table with urbanmapr county shapefile
     full_join(counties, by = c('place_state_name' = 'state_name', 
                                    'place_county_name' = 'county_name')) %>% 
-    # Filter to inculde only Illinois counties
+    # Filter to include only Illinois counties
     filter(place_state_name == 'Illinois') %>%
     # Replace NA values with 0
-    replace_na(list(totobs = 0)) %>%
+    replace_na(list(n = 0)) %>%
     # Create map fill categories
-    mutate(obscat = cut(totobs, c(-1,0,9,99,999,9999)))
+    mutate(obscat = cut(n, c(-1,0,9,99,999,9999)))
 
 # Create obs map
 obs_map <- obs %>%
@@ -139,23 +141,22 @@ species <- ilbby20 %>%
                                       "DeWitt" = "De Witt", 
                                       "De Kalb" = "DeKalb",
                                       "La Salle" = "LaSalle")) %>%
-    # Create dummy variable, append "County" to county variable for later merge
-    mutate(x = 1, place_county_name = paste(place_county_name, "County")) %>% 
+    # Create indicator variable, append "County" to county variable for later merge
+    mutate(place_county_name = paste(place_county_name, "County")) %>% 
     # Summarize number of species per county
     group_by(place_state_name, place_county_name, scientific_name) %>%
-    summarize(totobs = sum(x)) %>%
-    mutate(y = 1) %>%
+    count(place_county_name) %>%
     group_by(place_state_name, place_county_name) %>%
-    summarize(totspecies = sum(y)) %>% 
+    count(place_county_name) %>%
     # Join county-level summary table with urbanmapr county shapefile
     full_join(counties, by = c('place_state_name' = 'state_name', 
                                                  'place_county_name' = 'county_name')) %>%
     # Filter to inculde only Illinois counties
     filter(place_state_name == 'Illinois') %>%
     # Replace NA values with 0
-    replace_na(list(totspecies = 0)) %>%
+    replace_na(list(n = 0)) %>%
     # Create map fill categories
-    mutate(speciescat = cut(totspecies, c(-1,0,9,99,999)))
+    mutate(speciescat = cut(n, c(-1,0,9,99,999)))
 
 # Create species map
 species_map <- species %>%
@@ -195,12 +196,11 @@ species_map
 
 # Install tools to pull data
 # install_github("pjhanly/iNatTools") 
-library(iNatTools)
 # Help file for iNat tool: https://pjhanly.github.io/iNat/iNat.html
 
 # Install tools for calendar heat map
 # Background: http://www.columbia.edu/~sg3637/blog/Time_Series_Heatmaps.html
-source("https://raw.githubusercontent.com/iascchen/VisHealth/master/R/calendarHeat.R")
+# source("https://raw.githubusercontent.com/iascchen/VisHealth/master/R/calendarHeat.R")
 
 # Create teal color scheme
 lt2dt <- c("#64b59b", "#295648")
