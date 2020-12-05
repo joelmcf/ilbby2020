@@ -80,7 +80,7 @@ obs <- ilbby20 %>%
                                       "DeWitt" = "De Witt", 
                                       "De Kalb" = "DeKalb",
                                       "La Salle" = "LaSalle")) %>%
-    # Create indicator variable, append "County" to county variable for later merge
+    # Append "County" to county variable for later merge
     mutate(place_county_name = paste(place_county_name, "County")) %>% 
     # Summarize number of obs per county
     group_by(place_state_name, place_county_name) %>%
@@ -141,7 +141,7 @@ species <- ilbby20 %>%
                                       "DeWitt" = "De Witt", 
                                       "De Kalb" = "DeKalb",
                                       "La Salle" = "LaSalle")) %>%
-    # Create indicator variable, append "County" to county variable for later merge
+    # Create Append "County" to county variable for later merge
     mutate(place_county_name = paste(place_county_name, "County")) %>% 
     # Summarize number of species per county
     group_by(place_state_name, place_county_name, scientific_name) %>%
