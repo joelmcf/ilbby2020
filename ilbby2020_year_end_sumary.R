@@ -77,11 +77,11 @@ obs <- ilbby20 %>%
                                       "DeWitt" = "De Witt", 
                                       "De Kalb" = "DeKalb",
                                       "La Salle" = "LaSalle")) %>%
-        # Append "County" to county variable for later merge
+    # Append "County" to county variable for later merge
     mutate(place_county_name = paste(place_county_name, "County")) %>% 
     # Summarize number of obs per county
     group_by(place_state_name, place_county_name) %>%
-    count(place_county_name) %>%
+    count(place_county_name)  %>%
     # Join county-level summary table with urbanmapr county shapefile
     full_join(counties, by = c('place_state_name' = 'state_name', 
                                'place_county_name' = 'county_name')) %>% 
@@ -92,8 +92,14 @@ obs <- ilbby20 %>%
     # Create map fill categories
     mutate(obscat = cut(n, c(-1,0,9,99,999,99999)))
 
+obs.summary <- obs %>%
+    distinct(place_county_name, n) %>%
+    arrange(-n)
+
+write.csv(obs.summary, file = "obs_summary.csv")
+
 # Create map
-obs_map <- obs %>%
+obs.map <- obs %>%
     # Fill counties based on number of observations
     ggplot(mapping = aes(long, lat, group = group, fill = obscat)) + 
     geom_polygon(color = NA) +
@@ -105,8 +111,11 @@ obs_map <- obs %>%
                  fill = NA, color = "#000000", size = 0.05) +
     # Set map projection
     coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
+    # Add title 
+    ggtitle("Illinois Botanists Big Year 2020") +
     # Adjust theme elements
-    theme(panel.background = element_blank(),
+    theme(plot.title = element_text(hjust = 0.5, face="bold"),
+          panel.background = element_blank(),
           panel.border = element_blank(), 
           panel.grid.major = element_blank(), 
           axis.title.x = element_blank(), 
@@ -120,11 +129,11 @@ obs_map <- obs %>%
     scale_fill_manual(values= c("White", "#64b59b", "#4a9b81", "#3a7965", "#295648"), 
                       guide = "legend", 
                       name = "Research-grade \nplant observations", 
-                      labels = c("0","1-9", "10-99", "100-999", "1,000+")) +
-    # Add title
-    labs(title = "Illinois Botanists Big Year 2020: \nobservations by county")
+                      labels = c("0","1-9", "10-99", "100-999", "1,000+"))
 
-obs_map
+obs.map
+
+ggsave("ilbby2020obs.pdf")
 
 ################################################################################
 # Number of counties per participant
@@ -137,9 +146,11 @@ counties.part <- ilbby20 %>%
                                       "La Salle" = "LaSalle")) %>%
     mutate(place_county_name = paste(place_county_name, "County")) %>% 
     distinct(user_login, place_county_name) %>%
-    count(user_login)
+    count(user_login) %>%
+    arrange(-n)
 
-# ggsave("ilbby2020obs.pdf")
+write.csv(counties.part, file = "counties_part.csv")
+
 
 ################################################################################
 # Number of observations per x residents
@@ -163,9 +174,57 @@ counties.obs <- ilbby20 %>%
     mutate(place_county_name = paste(place_county_name, "County")) %>% 
     # Summarize number of obs per county
     group_by(place_state_name, place_county_name) %>%
-    count(place_county_name)
+    count(place_county_name) %>%
+    ungroup()
 
 counties.obs.pop <- full_join(counties.obs, counties.pop.il, by = c('place_county_name' = 'CTYNAME')) %>%
     mutate(obs.per.pop = round(n/POPESTIMATE2019*1000, digits=1)) %>%
-    arrange(-obs.per.pop)
+    arrange(-obs.per.pop) %>%
+    replace_na(list(n=0, obs.per.pop=0)) %>%
+    rename(county = place_county_name, 
+           obs = n,
+           pop2019 = POPESTIMATE2019) %>%
+    select(county, obs, pop2019, obs.per.pop) %>%
+    full_join(counties2, by = c('county' = 'county_name')) %>%
+    mutate(obscat = cut(obs.per.pop, c(-1,0,10,50,100,125)))
+
+    
+
+# write.csv(counties.obs.pop, file = "obs_per_pop.csv")
+
+obs.per.pop.map <- counties.obs.pop %>%
+    # Fill counties based on number of observations
+    ggplot(mapping = aes(long, lat, group = group, fill = obscat)) + 
+    geom_polygon(color = NA) +
+    # Add state border
+    geom_polygon(data = states2, mapping = aes(long, lat, group = group),
+                 fill = NA, color = "#000000") +
+    # Add county borders
+    geom_polygon(data = counties2, mapping = aes(long, lat, group = group),
+                 fill = NA, color = "#000000", size = 0.05) +
+    # Set map projection
+    coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
+    # Add title 
+    ggtitle("Illinois Botanists Big Year 2020") +
+    # Adjust theme elements
+    theme(plot.title = element_text(hjust = 0.5, face="bold"),
+          panel.background = element_blank(),
+          panel.border = element_blank(), 
+          panel.grid.major = element_blank(), 
+          axis.title.x = element_blank(), 
+          axis.title.y = element_blank(), 
+          axis.text.x = element_blank(), 
+          axis.text.y = element_blank(), 
+          axis.ticks.x = element_blank(), 
+          axis.ticks.y = element_blank(),
+          legend.background = element_rect(fill="gray90")) +
+    # Select color palette, format legend
+    scale_fill_manual(values= c("White", "#64b59b", "#4a9b81", "#3a7965", "#295648"), 
+                      guide = "legend", 
+                      name = "Research-grade \nplant observations \nper thousand residents", 
+                      labels = c("0","1-10", "11-50", "51-100", "101+"))
+
+obs.per.pop.map
+
+ggsave("ilbby2020obsperpop.pdf")
 
