@@ -4,14 +4,24 @@
 # Output: 
 #   -Bar chart showing participation growth across years
 #   -Map of observations by county
+#   -Number of counties per participant
 #   -Map of species by county
-# Date: 
+# Date: 12/26/2020
 ################################################################################
 
 library(tidyverse)
+library(scales)
 library(urbnmapr)
 
 ilbby20 <- read.csv("observations-122044.csv")
+
+# Filter urbanmapr county and state files
+states.il <- filter(states, state_name == 'Illinois')
+counties.il <- filter(counties, state_name == 'Illinois')
+
+# File below downloaded from https://www.census.gov/data/tables/time-series/demo/popest/2010s-counties-total.html#par_textimage 
+# on 12/5/2020
+counties.pop <- read.csv("co-est2019-alldata.csv")
 
 # List of IL Threatened and Endangered Species
 # https://www2.illinois.gov/dnr/ESPB/Documents/ET%20List%20Review%20and%20Revision/Illinois%20Endangered%20and%20Threatened%20Species.pdf
@@ -60,16 +70,12 @@ g <- ggplot(finalpart_long2, aes(x = Year, y = value, fill = fct_rev(pvar))) +
                                  "Users" = "#295648")) +
     ggtitle("ILBBY participation, 2016-2020")
 
-g + theme_classic()
+g
 
 ################################################################################
-# Map observations by county
+# Observations by county
 
-# Filter urbanmapr county and state files
-states2 <- filter(states, state_name == 'Illinois')
-counties2 <- filter(counties, state_name == 'Illinois')
-
-# Create summarized dataset
+# Create summarized dataset for mapping
 obs <- ilbby20 %>%
     # Create state name variable for later merge, correct county name errors
     mutate(place_state_name = "Illinois",
@@ -83,15 +89,13 @@ obs <- ilbby20 %>%
     group_by(place_state_name, place_county_name) %>%
     count(place_county_name)  %>%
     # Join county-level summary table with urbanmapr county shapefile
-    full_join(counties, by = c('place_state_name' = 'state_name', 
-                               'place_county_name' = 'county_name')) %>% 
-    # Filter to include only Illinois counties
-    filter(place_state_name == 'Illinois') %>%
+    full_join(counties.il, by = c( 'place_county_name' = 'county_name')) %>% 
     # Replace NA values with 0
     replace_na(list(n = 0)) %>%
     # Create map fill categories
     mutate(obscat = cut(n, c(-1,0,9,99,999,99999)))
 
+# Subset dataset for export to CSV
 obs.summary <- obs %>%
     distinct(place_county_name, n) %>%
     arrange(-n)
@@ -104,10 +108,10 @@ obs.map <- obs %>%
     ggplot(mapping = aes(long, lat, group = group, fill = obscat)) + 
     geom_polygon(color = NA) +
     # Add state border
-    geom_polygon(data = states2, mapping = aes(long, lat, group = group),
+    geom_polygon(data = states.il, mapping = aes(long, lat, group = group),
                  fill = NA, color = "#000000") +
     # Add county borders
-    geom_polygon(data = counties2, mapping = aes(long, lat, group = group),
+    geom_polygon(data = counties.il, mapping = aes(long, lat, group = group),
                  fill = NA, color = "#000000", size = 0.05) +
     # Set map projection
     coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
@@ -136,8 +140,9 @@ obs.map
 ggsave("ilbby2020obs.pdf")
 
 ################################################################################
-# Number of counties per participant
+# Counties per participant
 
+# Create summarized dataset for export to CSV
 counties.part <- ilbby20 %>%
     mutate(place_state_name = "Illinois",
            place_county_name = recode(place_county_name, 
@@ -149,21 +154,18 @@ counties.part <- ilbby20 %>%
     count(user_login) %>%
     arrange(-n)
 
-write.csv(counties.part, file = "counties_part.csv")
+# write.csv(counties.part, file = "counties_part.csv")
 
 
 ################################################################################
-# Number of observations per x residents
-
-# File below downloaded from https://www.census.gov/data/tables/time-series/demo/popest/2010s-counties-total.html#par_textimage 
-# on 12/5/2020
-counties.pop <- read.csv("co-est2019-alldata.csv")
+# Number of observations per 1,000 residents
 
 counties.pop.il <- counties.pop %>%
     filter(STNAME == "Illinois" & grepl("County", CTYNAME)) %>%
     select(CTYNAME, POPESTIMATE2019)
 
-counties.obs <- ilbby20 %>%
+# Create summarized dataset for mapping
+obs.pop <- ilbby20 %>%
     # Create state name variable for later merge, correct county name errors
     mutate(place_state_name = "Illinois",
            place_county_name = recode(place_county_name, 
@@ -175,9 +177,8 @@ counties.obs <- ilbby20 %>%
     # Summarize number of obs per county
     group_by(place_state_name, place_county_name) %>%
     count(place_county_name) %>%
-    ungroup()
-
-counties.obs.pop <- full_join(counties.obs, counties.pop.il, by = c('place_county_name' = 'CTYNAME')) %>%
+    ungroup() %>%
+    full_join(counties.pop.il, by = c('place_county_name' = 'CTYNAME')) %>%
     mutate(obs.per.pop = round(n/POPESTIMATE2019*1000, digits=1)) %>%
     arrange(-obs.per.pop) %>%
     replace_na(list(n=0, obs.per.pop=0)) %>%
@@ -185,22 +186,27 @@ counties.obs.pop <- full_join(counties.obs, counties.pop.il, by = c('place_count
            obs = n,
            pop2019 = POPESTIMATE2019) %>%
     select(county, obs, pop2019, obs.per.pop) %>%
-    full_join(counties2, by = c('county' = 'county_name')) %>%
-    mutate(obscat = cut(obs.per.pop, c(-1,0,10,50,100,125)))
+    full_join(counties.il, by = c('county' = 'county_name')) %>%
+    mutate(obscat = cut(obs.per.pop, c(-1,0,10,50,100,125))) %>%
+    ungroup
 
-    
+# Subset data for export to CSV
+obs.pop.summary <- obs.pop %>%
+    distinct(county, obs, pop2019, obs.per.pop) %>%
+    arrange(-obs.per.pop)
 
-# write.csv(counties.obs.pop, file = "obs_per_pop.csv")
+#write.csv(obs.pop.summary, file = "obs_pop_summary.csv")
 
-obs.per.pop.map <- counties.obs.pop %>%
+# Create map
+obs.pop.map <- obs.pop %>%
     # Fill counties based on number of observations
     ggplot(mapping = aes(long, lat, group = group, fill = obscat)) + 
     geom_polygon(color = NA) +
     # Add state border
-    geom_polygon(data = states2, mapping = aes(long, lat, group = group),
+    geom_polygon(data = states.il, mapping = aes(long, lat, group = group),
                  fill = NA, color = "#000000") +
     # Add county borders
-    geom_polygon(data = counties2, mapping = aes(long, lat, group = group),
+    geom_polygon(data = counties.il, mapping = aes(long, lat, group = group),
                  fill = NA, color = "#000000", size = 0.05) +
     # Set map projection
     coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
@@ -222,9 +228,9 @@ obs.per.pop.map <- counties.obs.pop %>%
     scale_fill_manual(values= c("White", "#64b59b", "#4a9b81", "#3a7965", "#295648"), 
                       guide = "legend", 
                       name = "Research-grade \nplant observations \nper thousand residents", 
-                      labels = c("0","1-10", "11-50", "51-100", "101+"))
+                      labels = c("0.0","0.1-10.0", "10.1-50.0", "50.1-100.0", "100.1+"))
 
-obs.per.pop.map
+obs.pop.map
 
-ggsave("ilbby2020obsperpop.pdf")
+ggsave("ilbby2020obspop.pdf")
 
