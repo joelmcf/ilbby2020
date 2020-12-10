@@ -6,6 +6,14 @@
 
 library(tidyverse)
 library(urbnmapr)
+library(showtext)
+library(cowplot)
+library(grid)
+library(gifski)
+library(gganimate)
+library(scales)
+
+font_add_google("Federo")
 
 states.il <- filter(states, state_name == 'Illinois')
 counties.il <- filter(counties, state_name == 'Illinois')
@@ -422,7 +430,7 @@ latlongpoints <- data.frame(
           -88.5636841084)
 )
 
-ailanthus.range.map <- ailanthus.range %>%
+ailanthus.range <- ailanthus.range %>%
     # Fill counties based on number of observations
     ggplot(mapping = aes(long, lat, group = group, fill = range)) + 
     geom_polygon(color = NA) +
@@ -435,7 +443,7 @@ ailanthus.range.map <- ailanthus.range %>%
     # Set map projection
     coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
     # Add title 
-    ggtitle("Ailanthus altissima ") +
+#    ggtitle("Ailanthus altissima ") +
     # Adjust theme elements
     theme(plot.title = element_text(hjust = 0.5, face="bold"),
           panel.background = element_blank(),
@@ -452,6 +460,91 @@ ailanthus.range.map <- ailanthus.range %>%
     scale_fill_manual(values= c("White", "#4a9b81"), 
                       guide = "legend", 
                       name = "Range \n(from Illinois Wildflowers site)", 
-                      labels = c("Not present", "Present"))
+                      labels = c("Not present", "Present")) 
 
-ailanthus.range.map + geom_point(data=latlongpoints, aes(lon, lat), inherit.aes = FALSE, size=.5)
+ailanthus.observations <- ailanthus.range + geom_point(data=latlongpoints, aes(lon, lat), inherit.aes = FALSE, size=.5)
+
+###
+
+png('range.png')
+
+ailanthus.range
+
+dev.off()
+
+###
+
+png('observations')
+
+ailanthus.observations
+
+dev.off()
+
+###
++ 
+    geom_point(data=latlongpoints, aes(lon, lat), inherit.aes = FALSE, size=.5)
+
+
+#ailanthus.range.map 
+
+title <- ggdraw() +
+    draw_label(
+        "Ailanthus altissima test title",
+        x = 0.01,
+        y = 1,
+        fontfamily = "Federo",
+        size = 35,
+        fontface = "bold",
+        hjust = 0
+    ) +
+    coord_cartesian(clip = "off") +
+    theme(
+        plot.margin = margin(t = 30, r = 30, b = 0, l = 0),
+        plot.background = element_rect(fill = "grey98", color = "grey98")
+    )
+
+plot_row <- plot_grid(ailanthus.range.map) 
+
+title <- ggdraw() +
+    draw_label(
+        "Tree of Heaven (Ailanthus altissima)",
+        fontface = 'bold', size=16,
+        x = 0,
+        hjust = 0
+    ) +
+    theme(
+        plot.margin = margin(0, 0, 0, 10), 
+        plot.background = element_rect(fill = "#4a9b81", color = NA)
+    )  
+
+plot_grid(
+    title, plot_row,
+    ncol = 1,
+    # rel_heights values control vertical title margins
+    rel_heights = c(0.1, 1)
+)
+
+################################################################################
+# gifs
+
+# gifski
+# magick
+# gganimate: https://gganimate.com/articles/gganimate.html
+# * https://paldhous.github.io/ucb/2018/dataviz/week14.html
+
+# range.png
+# observations.png
+
+p <- ggplot(iris, aes(x = Petal.Width, y = Petal.Length)) +
+    geom_point()
+
+plot(p)
+
+anim <- p +
+    transition_states(Species,
+                      transition_length = 2,
+                      state_length = 1)
+
+anim
+
+anim_save("testgif.gif", anim)
