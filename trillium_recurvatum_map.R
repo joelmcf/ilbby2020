@@ -7,6 +7,9 @@ library(urbnmapr)
 
 trillium <- read.csv("observations-123153.csv")
 
+numdates <- trillium %>%
+    distinct(observed_on)
+
 # Column names
 # observed_on
 # latitude
@@ -29,16 +32,18 @@ trillium.map <- ggplot(counties.il, mapping = aes(long, lat, group = group)) +
     # Set map projection
     coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
     # Add title 
-    ggtitle("Trillium recurvatum") +
+    ggtitle("Trillium recurvatum observations") +
     # Adjust theme elements
     theme(plot.title = element_text(hjust = 0.5, face="bold"),
+          plot.subtitle = element_text(hjust = 0.5, ),
           panel.background = element_blank(),
           panel.border = element_blank(), 
           panel.grid.major = element_blank(), 
           axis.title = element_blank(), 
           axis.text = element_blank(), 
           axis.ticks = element_blank(), 
-          legend.background = element_rect(fill="gray90")) 
+          legend.background = element_rect(fill="gray90")) + 
+    labs(subtitle = '{closest_state}')
 
 trillium.map + 
     geom_point(data=trillium, aes(longitude, latitude), inherit.aes = FALSE, size=.5)
@@ -50,11 +55,12 @@ anim <- trillium.map +
     geom_point(data=trillium, aes(longitude, latitude), inherit.aes = FALSE, size=.5) + 
     transition_states(observed_on, transition_length=0)
 
-anim <- animate(anim)
+anim <- animate(anim, nframes=87, dur=50)
 
 anim
 
-
+# Export gif
+anim_save("trillium.gif", anim)
 
 
 
