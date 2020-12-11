@@ -4,6 +4,7 @@
 library(tidyverse)
 library(scales)
 library(urbnmapr)
+library(gganimate)
 
 trillium <- read.csv("observations-123153.csv")
 
@@ -52,8 +53,10 @@ trillium.map +
 # Create animation
 # Source example: https://medium.com/business-as-usual-at-solar-analytics/animating-time-series-on-a-map-using-solar-analytic-data-and-r-s-gganimate-package-7831dc3da9d2
 anim <- trillium.map +
-    geom_point(data=trillium, aes(longitude, latitude), inherit.aes = FALSE, size=.5) + 
-    transition_states(observed_on, transition_length=0)
+    geom_point(data=trillium, aes(longitude, latitude), color="#56d800",
+               inherit.aes = FALSE, size=3) + 
+    transition_states(observed_on, transition_length=0) + 
+    shadow_mark(color="#808080", size=1)
 
 anim <- animate(anim, nframes=87, dur=50)
 
@@ -63,9 +66,21 @@ anim
 anim_save("trillium.gif", anim)
 
 
+################################################################################
+# Formatting cleanup
+# Put border around initial geom_point: https://stackoverflow.com/questions/10437442/place-a-border-around-points
+# Show static frames for days without data
+# Base initial color on phenology annotations
+# Put data in Month XX, XXXX format
+# Increase size of title and subtitle
+# Add legend
+# Add county shading
+# Add calendar heat map that also builds over time
 
-
-
+# Other species to map
+## Claytonia virginica
+## Sanguinaria canadensis
+## Erythronium albidum
 
 
 
