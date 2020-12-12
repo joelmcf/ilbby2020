@@ -1,7 +1,11 @@
 ################################################################################
-# Ailanthus map
-#
-#
+# Purpose: Plot observation coordinates over county range map
+# Input data: December 8, 2020 downloads from iNat
+# Output: 
+#   - County-level range map
+#   - County-level range map with observations plotted
+#       - Version with header
+# Date: December 8, 2020
 ################################################################################
 
 library(tidyverse)
@@ -9,8 +13,6 @@ library(urbnmapr)
 library(showtext)
 library(cowplot)
 library(grid)
-library(gifski)
-library(gganimate)
 library(scales)
 
 font_add_google("Federo")
@@ -18,7 +20,8 @@ font_add_google("Federo")
 states.il <- filter(states, state_name == 'Illinois')
 counties.il <- filter(counties, state_name == 'Illinois')
 
-
+################################################################################
+# Input data
 
 ailanthus.range <- counties.il %>%
     mutate(range = case_when(
@@ -430,6 +433,9 @@ latlongpoints <- data.frame(
           -88.5636841084)
 )
 
+################################################################################
+#  Create maps
+
 ailanthus.range <- ailanthus.range %>%
     # Fill counties based on number of observations
     ggplot(mapping = aes(long, lat, group = group, fill = range)) + 
@@ -480,30 +486,8 @@ ailanthus.observations
 
 dev.off()
 
-###
-+ 
-    geom_point(data=latlongpoints, aes(lon, lat), inherit.aes = FALSE, size=.5)
-
-
-#ailanthus.range.map 
-
-title <- ggdraw() +
-    draw_label(
-        "Ailanthus altissima test title",
-        x = 0.01,
-        y = 1,
-        fontfamily = "Federo",
-        size = 35,
-        fontface = "bold",
-        hjust = 0
-    ) +
-    coord_cartesian(clip = "off") +
-    theme(
-        plot.margin = margin(t = 30, r = 30, b = 0, l = 0),
-        plot.background = element_rect(fill = "grey98", color = "grey98")
-    )
-
-plot_row <- plot_grid(ailanthus.range.map) 
+################################################################################
+# Add title
 
 title <- ggdraw() +
     draw_label(
@@ -517,34 +501,11 @@ title <- ggdraw() +
         plot.background = element_rect(fill = "#4a9b81", color = NA)
     )  
 
+plot_row <- plot_grid(ailanthus.observations) 
+
 plot_grid(
     title, plot_row,
     ncol = 1,
     # rel_heights values control vertical title margins
     rel_heights = c(0.1, 1)
 )
-
-################################################################################
-# gifs
-
-# gifski
-# magick
-# gganimate: https://gganimate.com/articles/gganimate.html
-# * https://paldhous.github.io/ucb/2018/dataviz/week14.html
-
-# range.png
-# observations.png
-
-p <- ggplot(iris, aes(x = Petal.Width, y = Petal.Length)) +
-    geom_point()
-
-plot(p)
-
-anim <- p +
-    transition_states(Species,
-                      transition_length = 2,
-                      state_length = 1)
-
-anim
-
-anim_save("testgif.gif", anim)
