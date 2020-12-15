@@ -166,31 +166,50 @@ anim_save("sanguinaria.gif", map.sanguinaria)
 
 ################################################################################
 # Sanguinaria canadensis data with phenology annotations
-sanguinaria.phen <- iNat(project = "illinois-botanists-big-year-2020", 
-                              taxon_id=51044, 
-                              term_id = 12, 
-                              term_value_id = 13) %>%
-    mutate(latitude = gsub(",.*$", "", location),
-           longitude = gsub("*$.,", "", location)) %>% 
-    select(location, latitude, longitude)
+sanguinaria.flowering <- iNat(project = "illinois-botanists-big-year-2020", 
+                          taxon_id=51044,  
+                          term_id = 12, 
+                          term_value_id = 13) %>%
+    mutate(latitude = as.numeric(gsub(",.*$", "", location)),
+           longitude = as.numeric(gsub("^.*,", "", location)))
+
+sanguinaria.all <- iNat(project = "illinois-botanists-big-year-2020", 
+                              taxon_id=51044) %>%
+    mutate(latitude = as.numeric(gsub(",.*$", "", location)),
+           longitude = as.numeric(gsub("^.*,", "", location)))
+
+flower.ids <- sanguinaria.flowering$id 
+
+sanguinaria.all <- sanguinaria.all %>%
+    mutate(indicator = case_when(
+        id %in% flower.ids ~ "F", 
+        TRUE ~ "V"
+    )) 
+
+#192
+#526
+#(diff=334)
 
 numdates <- sanguinaria.phen %>%
     distinct(observed_on)
 # 38
 
+typeof(sanguinaria.phen$longitude)
 
-map.sanguinaria.phen <- map +
-    geom_point(data=sanguinaria.phen, aes(longitude, latitude), 
-               pch=21, fill="#56d800",
+map.sanguinaria.all <- map +
+    geom_point(data=sanguinaria.all, 
+               aes(longitude, latitude,  fill=indicator), 
+               pch=21,
                color="black",
                inherit.aes = FALSE, size=3) + 
-    transition_states(observed_on_date, transition_length=0) + 
+    transition_states(observed_on, transition_length=0) + 
     shadow_mark(fill="#808080", color="#808080", size=1) +
     labs(title = "Bloodroot observations", 
          subtitle = expression(italic("(Sanguinaria canadensis)")),
-         caption = "{closest_state}")
+         caption = "{closest_state}") +
+    scale_fill_manual(values= c("#ffbf00", "#c0ff00"))
 
-map.sanguinaria.phen <- animate(map.sanguinaria.phen, nframes=38, dur=50)
+map.sanguinaria.all <- animate(map.sanguinaria.all, nframes=78, dur=78)
 
 # Export gif
-anim_save("sanguinaria.gif", map.sanguinaria.phen)
+anim_save("sanguinaria.gif", map.sanguinaria.all)
