@@ -45,7 +45,6 @@ map <- ggplot(counties.il, mapping = aes(long, lat, group = group)) +
           axis.title = element_blank(), 
           axis.text = element_blank(), 
           axis.ticks = element_blank(), 
-          legend.background = element_rect(fill="gray90"), 
           title = element_text(size=12), 
           plot.subtitle = element_text(size=11),
           plot.caption = element_text(size=12, hjust = 0.60))
@@ -85,17 +84,9 @@ anim_save("trillium.gif", map.trillium)
 # Put border around initial geom_point: https://stackoverflow.com/questions/10437442/place-a-border-around-points
 
 # Show static frames for days without data
-# Base initial color on phenology annotations
 # Put data in Month XX, XXXX format
 # Increase size of title and subtitle
-# Add legend
-# Add county shading
 # Add calendar heat map that also builds over time
-
-# Other species to map
-## Claytonia virginica
-## Sanguinaria canadensis
-## Erythronium albidum
 
 ################################################################################
 # Attempt to synch frames to days
@@ -186,10 +177,6 @@ sanguinaria.all <- sanguinaria.all %>%
         TRUE ~ "V"
     )) 
 
-#192
-#526
-#(diff=334)
-
 numdates <- sanguinaria.phen %>%
     distinct(observed_on)
 # 38
@@ -207,9 +194,15 @@ map.sanguinaria.all <- map +
     labs(title = "Bloodroot observations", 
          subtitle = expression(italic("(Sanguinaria canadensis)")),
          caption = "{closest_state}") +
-    scale_fill_manual(values= c("#ffbf00", "#c0ff00"))
+    scale_fill_manual(values = c("#ffbf00", "#c0ff00"), 
+                      labels = c("Flowering", "Non-flowering"), 
+                      name = element_blank()) + 
+    theme(legend.text = element_text(size = 12), 
+          legend.key=element_blank())
 
 map.sanguinaria.all <- animate(map.sanguinaria.all, nframes=78, dur=78)
+
+map.sanguinaria.all
 
 # Export gif
 anim_save("sanguinaria.gif", map.sanguinaria.all)
