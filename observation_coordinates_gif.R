@@ -54,7 +54,12 @@ map <- ggplot(counties.il, mapping = aes(long, lat, group = group)) +
 # Source example: https://medium.com/business-as-usual-at-solar-analytics/animating-time-series-on-a-map-using-solar-analytic-data-and-r-s-gganimate-package-7831dc3da9d2
 
 trillium <- read.csv("observations-123153.csv")  %>%
-    mutate(observed_on_date = ymd(observed_on))
+    mutate(observed_on_date = ymd(observed_on)) %>%
+    mutate(year = format(observed_on_date, "%Y"),
+           week = as.integer(format(observed_on_date, "%W")) + 1,
+           day = factor(weekdays(observed_on_date, T), 
+                        levels = rev(c("Mon", "Tue", "Wed", "Thu", 
+                                       "Fri", "Sat", "Sun"))))
 
 typeof(trillium$observed_on) #integer
 typeof(trillium$observed_on_date) # double
@@ -162,7 +167,7 @@ sanguinaria.flowering <- iNat(project = "illinois-botanists-big-year-2020",
                           term_id = 12, 
                           term_value_id = 13) %>%
     mutate(latitude = as.numeric(gsub(",.*$", "", location)),
-           longitude = as.numeric(gsub("^.*,", "", location)))
+           longitude = as.numeric(gsub("^.*,", "", location))) 
 
 sanguinaria.all <- iNat(project = "illinois-botanists-big-year-2020", 
                               taxon_id=51044) %>%
