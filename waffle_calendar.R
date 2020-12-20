@@ -15,12 +15,16 @@ trillium <- read.csv("observations-123153.csv")  %>%
     count(observed_on_date) %>%
     pad(start_val = as.Date("2020-01-01"), end_val = as.Date("2020-12-31")) %>%
     mutate(year = format(observed_on_date, "%Y"),
+           month = format(observed_on_date, "%m"),
+           monthname = format(observed_on_date, "%B"),
            week = as.integer(format(observed_on_date, "%W")) + 1,
            day = factor(weekdays(observed_on_date, T), 
                         levels = rev(c("Mon", "Tue", "Wed", "Thu", 
-                                       "Fri", "Sat", "Sun"))))
+                                       "Fri", "Sat", "Sun"))),
+           mo.week.num= epiweek(observed_on_date) - epiweek(floor_date(observed_on_date, unit = "month"))+1)
 
-# Create calendar heat map
+
+# Create basic calendar heat map
 waffle.calendar <- trillium %>%
     ggplot(aes(x=week, y=day, fill=n)) + 
     geom_tile(col="white", width=.9, height=.9) +
@@ -39,4 +43,23 @@ waffle.calendar <- trillium %>%
 
 waffle.calendar
 
+waffle.calendar + facet_grid(rows = vars(month))
+
+
 ggsave("waffle_calendar.pdf")
+
+# Create calendar heat map, faceted by month
+
+waffle.calendar.faceted <- trillium %>%
+    ggplot(aes(x=mo.week.num, y=day, fill=n)) + 
+    geom_tile(col="white", width=.9, height=.9) +
+    scale_fill_viridis_c("", option = "plasma", direction = -1, end = .9) +
+    theme_minimal() + 
+    theme(panel.grid = element_blank(), 
+          legend.position = "bottom", 
+          axis.title = element_blank()) + 
+    coord_equal() + 
+    facet_grid(cols = vars(month))
+
+
+waffle.calendar.faceted 
