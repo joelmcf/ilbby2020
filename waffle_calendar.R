@@ -22,7 +22,7 @@ trillium <- read.csv("observations-123153.csv")  %>%
                         levels = rev(c("Sun", "Mon", "Tue", "Wed", "Thu", 
                                        "Fri", "Sat"))),
            mo.week.num= epiweek(observed_on_date) - epiweek(floor_date(observed_on_date, unit = "month"))+1) %>%
-    mutate(month.abbr = as.factor(case_when(
+    mutate(month.abbr = factor(case_when(
         month == "01" ~ "Jan", 
         month == "02" ~ "Feb", 
         month == "03" ~ "Mar", 
@@ -35,7 +35,9 @@ trillium <- read.csv("observations-123153.csv")  %>%
         month == "10" ~ "Oct", 
         month == "11" ~ "Nov", 
         month == "12" ~ "Dec"
-    )))
+    ), 
+    levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")))
 
 
 # Create basic calendar heat map
@@ -57,12 +59,10 @@ waffle.calendar <- trillium %>%
 
 waffle.calendar
 
-waffle.calendar + facet_grid(rows = vars(month))
-
 
 ggsave("waffle_calendar.pdf")
 
-# Create calendar heat map, faceted by month
+# Create calendar heat map, faceted by month (horizontal)
 
 waffle.calendar.faceted <- trillium %>%
     ggplot(aes(x=mo.week.num, y=day, fill=n)) + 
@@ -75,7 +75,7 @@ waffle.calendar.faceted <- trillium %>%
           axis.title = element_blank(), 
           axis.text.x = element_blank()) + 
     coord_equal() + 
-    facet_grid(cols = vars(month))
+    facet_grid(cols = vars(month.abbr))
 
 
 waffle.calendar.faceted 
