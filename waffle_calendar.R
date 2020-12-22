@@ -37,8 +37,68 @@ trillium <- read.csv("observations-123153.csv")  %>%
         month == "12" ~ "Dec"
     ), 
     levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
-               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")))
+               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))) %>%
+    mutate(scientific_name = "Trillium recurvatum")
 
+sanguinaria <- read.csv("observations-123418.csv")   %>%
+    mutate(observed_on_date = ymd(observed_on)) %>%
+    count(observed_on_date) %>%
+    pad(start_val = as.Date("2020-01-01"), end_val = as.Date("2020-12-31")) %>%
+    mutate(year = format(observed_on_date, "%Y"),
+           month = format(observed_on_date, "%m"),
+           monthname = format(observed_on_date, "%B"),
+           week = as.integer(format(observed_on_date, "%W")) + 1,
+           day = factor(weekdays(observed_on_date, T), 
+                        levels = rev(c("Sun", "Mon", "Tue", "Wed", "Thu", 
+                                       "Fri", "Sat"))),
+           mo.week.num= epiweek(observed_on_date) - epiweek(floor_date(observed_on_date, unit = "month"))+1) %>%
+    mutate(month.abbr = factor(case_when(
+        month == "01" ~ "Jan", 
+        month == "02" ~ "Feb", 
+        month == "03" ~ "Mar", 
+        month == "04" ~ "Apr", 
+        month == "05" ~ "May", 
+        month == "06" ~ "Jun",
+        month == "07" ~ "Jul", 
+        month == "08" ~ "Aug", 
+        month == "09" ~ "Sep", 
+        month == "10" ~ "Oct", 
+        month == "11" ~ "Nov", 
+        month == "12" ~ "Dec"
+    ), 
+    levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))) %>%
+    mutate(scientific_name = "Sanguinaria canadensis")
+
+claytonia <- read.csv("observations-123415.csv")   %>%
+    mutate(observed_on_date = ymd(observed_on)) %>%
+    count(observed_on_date) %>%
+    pad(start_val = as.Date("2020-01-01"), end_val = as.Date("2020-12-31")) %>%
+    mutate(year = format(observed_on_date, "%Y"),
+           month = format(observed_on_date, "%m"),
+           monthname = format(observed_on_date, "%B"),
+           week = as.integer(format(observed_on_date, "%W")) + 1,
+           day = factor(weekdays(observed_on_date, T), 
+                        levels = rev(c("Sun", "Mon", "Tue", "Wed", "Thu", 
+                                       "Fri", "Sat"))),
+           mo.week.num= epiweek(observed_on_date) - epiweek(floor_date(observed_on_date, unit = "month"))+1) %>%
+    mutate(month.abbr = factor(case_when(
+        month == "01" ~ "Jan", 
+        month == "02" ~ "Feb", 
+        month == "03" ~ "Mar", 
+        month == "04" ~ "Apr", 
+        month == "05" ~ "May", 
+        month == "06" ~ "Jun",
+        month == "07" ~ "Jul", 
+        month == "08" ~ "Aug", 
+        month == "09" ~ "Sep", 
+        month == "10" ~ "Oct", 
+        month == "11" ~ "Nov", 
+        month == "12" ~ "Dec"
+    ), 
+    levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"))) %>%
+    mutate(scientific_name = "Claytonia virginica")
 
 # Create basic calendar heat map
 waffle.calendar <- trillium %>%
@@ -64,9 +124,12 @@ ggsave("waffle_calendar.pdf")
 
 # Create calendar heat map, faceted by month (horizontal)
 
+day.1l <- c("S", "M", "T", "W", "T", "F", "S")
+
 waffle.calendar.faceted <- trillium %>%
     ggplot(aes(x=mo.week.num, y=day, fill=n)) + 
     geom_tile(col="white", width=.9, height=.9) +
+    scale_y_discrete(labels = rev(day.1l)) + 
     scale_fill_viridis_c("", option = "plasma", direction = -1, end = .9) +
     theme_minimal() + 
     theme(panel.grid = element_blank(),
@@ -76,6 +139,55 @@ waffle.calendar.faceted <- trillium %>%
           axis.text.x = element_blank()) + 
     coord_equal() + 
     facet_grid(cols = vars(month.abbr))
-
+    
 
 waffle.calendar.faceted 
+
+# Create calendar heat map faceted by month (horizontal) and species (vertical)
+
+combined <- rbind(claytonia, sanguinaria, trillium)
+
+combined <- combined  %>%
+    mutate(observed_on_date = ymd(observed_on)) %>%
+    count(scientific_name, observed_on_date) %>%
+    pad(start_val = as.Date("2020-01-01"), end_val = as.Date("2020-12-31")) %>%
+    mutate(year = format(observed_on_date, "%Y"),
+           month = format(observed_on_date, "%m"),
+           monthname = format(observed_on_date, "%B"),
+           week = as.integer(format(observed_on_date, "%W")) + 1,
+           day = factor(weekdays(observed_on_date, T), 
+                        levels = rev(c("Sun", "Mon", "Tue", "Wed", "Thu", 
+                                       "Fri", "Sat"))),
+           mo.week.num= epiweek(observed_on_date) - epiweek(floor_date(observed_on_date, unit = "month"))+1) %>%
+    mutate(month.abbr = factor(case_when(
+        month == "01" ~ "Jan", 
+        month == "02" ~ "Feb", 
+        month == "03" ~ "Mar", 
+        month == "04" ~ "Apr", 
+        month == "05" ~ "May", 
+        month == "06" ~ "Jun",
+        month == "07" ~ "Jul", 
+        month == "08" ~ "Aug", 
+        month == "09" ~ "Sep", 
+        month == "10" ~ "Oct", 
+        month == "11" ~ "Nov", 
+        month == "12" ~ "Dec"
+    ), 
+    levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")))
+
+waffle.calendar.faceted.species <- combined %>%
+    ggplot(aes(x=mo.week.num, y=day, fill=n)) + 
+    geom_tile(col="white", width=.9, height=.9) +
+    scale_y_discrete(labels = rev(day.1l)) + 
+    scale_fill_viridis_c("", option = "plasma", direction = -1, end = .9) +
+    theme_minimal() + 
+    theme(panel.grid = element_blank(),
+          panel.spacing.x = unit(.001, "lines"),
+          legend.position = "bottom", 
+          axis.title = element_blank(), 
+          axis.text.x = element_blank()) + 
+    coord_equal() + 
+    facet_grid(cols = vars(month.abbr), rows = vars(scientific_name))
+
+waffle.calendar.faceted.species
