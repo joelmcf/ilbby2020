@@ -183,11 +183,12 @@ waffle.calendar.faceted.species <- combined %>%
     scale_fill_viridis_c("", option = "plasma", direction = -1, end = .9) +
     theme_minimal() + 
     theme(panel.grid = element_blank(),
-          panel.spacing.x = unit(.001, "lines"),
+          strip.text.y = element_text(face = "italic"),
           legend.position = "bottom", 
           axis.title = element_blank(), 
           axis.text.x = element_blank()) + 
     coord_equal() + 
-    facet_grid(cols = vars(month.abbr), rows = vars(scientific_name))
+    facet_grid(cols = vars(month.abbr), rows = vars(scientific_name),
+               labeller = labeller(scientific_name = label_wrap_gen(10)))
 
 waffle.calendar.faceted.species
