@@ -1,4 +1,4 @@
-################################################################################
+# ------------------------------------------------------------------------------
 # Purpose: Summary final results for ILBBY 2020
 # Input data: 
 # Output: 
@@ -6,12 +6,15 @@
 #   -Map of observations by county
 #   -Number of counties per participant
 #   -Map of species by county
+#   -Calendar heat map of observations
 # Date: 12/26/2020
-################################################################################
+# ------------------------------------------------------------------------------
 
 library(tidyverse)
 library(scales)
 library(urbnmapr)
+library(waffle)
+library(padr)
 
 ilbby20 <- read.csv("observations-122044.csv")
 
@@ -26,7 +29,7 @@ counties.pop <- read.csv("co-est2019-alldata.csv")
 # List of IL Threatened and Endangered Species
 # https://www2.illinois.gov/dnr/ESPB/Documents/ET%20List%20Review%20and%20Revision/Illinois%20Endangered%20and%20Threatened%20Species.pdf
 
-################################################################################
+# ------------------------------------------------------------------------------
 # Bar chart showing participation growth across years
 
 # Create summary dataset taken from ILBBY pages on iNat
@@ -69,7 +72,7 @@ g <- ggplot(finalpart_long2, aes(x = Year, y = value, fill = fct_rev(pvar))) +
 
 g
 
-################################################################################
+# ------------------------------------------------------------------------------
 # Observations by county
 
 # Create summarized dataset for mapping
@@ -133,7 +136,7 @@ obs.map
 
 ggsave("ilbby2020obs.pdf")
 
-################################################################################
+# ------------------------------------------------------------------------------
 # Counties per participant
 
 # Create summarized dataset for export to CSV
@@ -225,3 +228,51 @@ obs.pop.map
 
 ggsave("ilbby2020obspop.pdf")
 
+# ------------------------------------------------------------------------------
+# Observation calendar heat map
+
+calendar <- ilbby20 %>%
+    mutate(observed_on_date = ymd(observed_on)) %>%
+    count(observed_on_date) %>%
+    pad(start_val = as.Date("2020-01-01"), end_val = as.Date("2020-12-31")) %>%
+    mutate(month = format(observed_on_date, "%m"),
+           week = as.integer(format(observed_on_date, "%W")) + 1,
+           day = factor(weekdays(observed_on_date, T), 
+                        levels = rev(c("Sun", "Mon", "Tue", "Wed", "Thu", 
+                                       "Fri", "Sat"))),
+           mo.week.num= epiweek(observed_on_date) - epiweek(floor_date(observed_on_date, unit = "month"))+1) %>%
+    mutate(month.abbr = factor(case_when(
+        month == "01" ~ "Jan", 
+        month == "02" ~ "Feb", 
+        month == "03" ~ "Mar", 
+        month == "04" ~ "Apr", 
+        month == "05" ~ "May", 
+        month == "06" ~ "Jun",
+        month == "07" ~ "Jul", 
+        month == "08" ~ "Aug", 
+        month == "09" ~ "Sep", 
+        month == "10" ~ "Oct", 
+        month == "11" ~ "Nov", 
+        month == "12" ~ "Dec"
+    ), 
+    levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")))   
+
+
+day.1l <- c("S", "M", "T", "W", "T", "F", "S")
+
+waffle.calendar <- calendar %>%
+    ggplot(aes(x=mo.week.num, y=day, fill=n)) + 
+    geom_tile(col="white", width=.9, height=.9) +
+    scale_y_discrete(labels = rev(day.1l)) + 
+    scale_fill_viridis_c("", option = "plasma", direction = -1, end = .9) +
+    theme_minimal() + 
+    theme(panel.grid = element_blank(),
+          panel.spacing.x = unit(.001, "lines"),
+          legend.position = "bottom", 
+          axis.title = element_blank(), 
+          axis.text.x = element_blank()) + 
+    coord_equal() + 
+    facet_grid(cols = vars(month.abbr))
+
+waffle.calendar
