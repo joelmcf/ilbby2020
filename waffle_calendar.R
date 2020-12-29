@@ -8,6 +8,7 @@
 
 # Load libraries
 library(tidyverse)
+library(lubridate)
 library(waffle)
 library(padr)
 
@@ -81,22 +82,29 @@ waffle.calendar
 
 day.1l <- c("S", "M", "T", "W", "T", "F", "S")
 
-waffle.calendar.faceted <- combined %>%
-    filter(scientific_name == "Trillium recurvatum") %>%
-    ggplot(aes(x=mo.week.num, y=day, fill=n)) + 
-    geom_tile(col="white", width=.9, height=.9) +
-    scale_y_discrete(labels = rev(day.1l)) + 
-    scale_fill_viridis_c("", option = "plasma", direction = -1, end = .9) +
-    theme_minimal() + 
-    theme(panel.grid = element_blank(),
-          panel.spacing.x = unit(.001, "lines"),
-          legend.position = "bottom", 
-          axis.title = element_blank(), 
-          axis.text.x = element_blank()) + 
-    coord_equal() + 
-    facet_grid(cols = vars(month.abbr))
-
+waffle.calendar.func <- function(species){
+    waffle.calendar.faceted <- combined %>%
+        filter(scientific_name == species) %>%
+        ggplot(aes(x=mo.week.num, y=day, fill=n)) + 
+        geom_tile(col="white", width=.9, height=.9) +
+        scale_y_discrete(labels = rev(day.1l)) + 
+        scale_fill_viridis_c("", option = "plasma", direction = -1, end = .9) +
+        theme_minimal() + 
+        theme(panel.grid = element_blank(),
+            panel.spacing.x = unit(.001, "lines"),
+            legend.position = "bottom", 
+            axis.title = element_blank(), 
+            axis.text.x = element_blank()) + 
+        coord_equal() + 
+        facet_grid(cols = vars(month.abbr)) + 
+        ggtitle(species)
 waffle.calendar.faceted 
+}
+
+waffle.calendar.func("Trillium recurvatum")
+waffle.calendar.func("Sanguinaria canadensis")
+waffle.calendar.func("Claytonia virginica")
+
 
 # Create calendar heat map faceted by month (horizontal) and species (vertical)
 
