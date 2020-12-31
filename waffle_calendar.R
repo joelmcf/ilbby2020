@@ -33,28 +33,31 @@ claytonia <- read.csv("observations-123415.csv")   %>%
     mutate(scientific_name = "Claytonia virginica")
 
 combined <- rbind(claytonia, sanguinaria, trillium) %>%
-    mutate(month = format(observed_on_date, "%m"),
-           week = as.integer(format(observed_on_date, "%W")) + 1,
-           day = factor(weekdays(observed_on_date, T), 
-                        levels = rev(c("Sun", "Mon", "Tue", "Wed", "Thu", 
-                                       "Fri", "Sat"))),
-           mo.week.num= epiweek(observed_on_date) - epiweek(floor_date(observed_on_date, unit = "month"))+1) %>%
-    mutate(month.abbr = factor(case_when(
-        month == "01" ~ "Jan", 
-        month == "02" ~ "Feb", 
-        month == "03" ~ "Mar", 
-        month == "04" ~ "Apr", 
-        month == "05" ~ "May", 
-        month == "06" ~ "Jun",
-        month == "07" ~ "Jul", 
-        month == "08" ~ "Aug", 
-        month == "09" ~ "Sep", 
-        month == "10" ~ "Oct", 
-        month == "11" ~ "Nov", 
-        month == "12" ~ "Dec"
-    ), 
-    levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
-               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")))    
+    mutate(
+        month = format(observed_on_date, "%m"),
+        week = as.integer(format(observed_on_date, "%W")) + 1,
+        day = factor(weekdays(observed_on_date, T),
+                     levels = rev(c("Sun", "Mon", "Tue", "Wed", "Thu",
+                                    "Fri", "Sat"))),
+        mo.week.num= epiweek(observed_on_date) - 
+            epiweek(floor_date(observed_on_date, unit = "month"))+1) %>%
+    mutate(
+        month.abbr = factor(case_when(
+            month == "01" ~ "Jan", 
+            month == "02" ~ "Feb", 
+            month == "03" ~ "Mar", 
+            month == "04" ~ "Apr", 
+            month == "05" ~ "May", 
+            month == "06" ~ "Jun",
+            month == "07" ~ "Jul", 
+            month == "08" ~ "Aug", 
+            month == "09" ~ "Sep", 
+            month == "10" ~ "Oct", 
+            month == "11" ~ "Nov", 
+            month == "12" ~ "Dec"
+            ), 
+            levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")))    
 
 # Create basic calendar heat map -----------------------------------------------
 waffle.calendar <- combined %>%
@@ -69,9 +72,11 @@ waffle.calendar <- combined %>%
                    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
         ) + 
     theme_minimal() + 
-    theme(panel.grid = element_blank(), 
-          legend.position = "bottom", 
-          axis.title = element_blank()) + 
+    theme(
+        panel.grid = element_blank(), 
+        legend.position = "bottom", 
+        axis.title = element_blank()
+        ) + 
     coord_equal()
 
 waffle.calendar
@@ -95,7 +100,8 @@ waffle.calendar.func <- function(common, scientific){
             legend.position = "bottom", 
             axis.title = element_blank(), 
             axis.text.x = element_blank(),
-            legend.key.size = unit(0.5, "cm")) + 
+            legend.key.size = unit(0.5, "cm")
+            ) + 
         coord_equal() + 
         facet_grid(cols = vars(month.abbr)) + 
         ggtitle(common, scientific)
@@ -112,7 +118,13 @@ calendar_4x3 <- combined %>%
         ggplot(aes(x=mo.week.num, y=day, fill=n)) + 
         geom_tile(col="white", width=.9, height=.9) +
         scale_y_discrete(labels = rev(day.1l)) + 
-        scale_fill_viridis_c("Number of \nobservations", option = "magma", direction = -1, end = .9, na.value = "#a6a6a6") +
+        scale_fill_viridis_c(
+            "Number of \nobservations", 
+            option = "magma", 
+            direction = -1, 
+            end = .9, 
+            na.value = "#a6a6a6"
+            ) +
         theme_minimal() + 
         theme(
             plot.title = element_text(face = "bold"),
@@ -122,7 +134,9 @@ calendar_4x3 <- combined %>%
             legend.position = "bottom", 
             axis.title = element_blank(), 
             axis.text.x = element_blank(),
-            legend.key.size = unit(0.5, "cm")) + 
+            legend.title = element_text(size = 10),
+            legend.key.size = unit(0.5, "cm")
+            ) + 
         coord_equal() + 
         facet_wrap(vars(month.abbr), nrow=4) + 
         ggtitle("Bloodroot", "Sanguinaria canadensis")
@@ -131,10 +145,12 @@ calendar_4x3
 #ggsave("sanguinaria_calendar_4x3.png")
 
 # Create 4x3 faceted calendar for phenology categories -------------------------
-sanguinaria.flowering <- iNat(project = "illinois-botanists-big-year-2020", 
-                              taxon_id=51044,  
-                              term_id = 12, 
-                              term_value_id = 13) 
+sanguinaria.flowering <- iNat(
+    project = "illinois-botanists-big-year-2020", 
+    taxon_id=51044,  
+    term_id = 12, 
+    term_value_id = 13
+    ) 
 
 sanguinaria.flowering.mod <-sanguinaria.flowering %>%
     mutate(observed_on_date = ymd(observed_on)) %>%
@@ -143,8 +159,10 @@ sanguinaria.flowering.mod <-sanguinaria.flowering %>%
     pad(start_val = as.Date("2020-01-01"), end_val = as.Date("2020-12-31"))
     
 
-sanguinaria.all <- iNat(project = "illinois-botanists-big-year-2020", 
-                        taxon_id=51044) 
+sanguinaria.all <- iNat(
+    project = "illinois-botanists-big-year-2020", 
+    taxon_id=51044
+    ) 
 
 sanguinaria.all.mod <-sanguinaria.all %>%
     mutate(observed_on_date = ymd(observed_on)) %>%
@@ -154,33 +172,40 @@ sanguinaria.all.mod <-sanguinaria.all %>%
     
 sanguinaria.combined.phen <- sanguinaria.all.mod %>%
     full_join(sanguinaria.flowering.mod, by = c("observed_on_date")) %>%
-    mutate(phen = case_when(
-        flowering == 1 ~ "Flowering", 
-        is.na(flowering) & all == 1 ~ "Nonflowering",
-        TRUE ~ NA_character_
-    )) %>%
-    mutate(month = format(observed_on_date, "%m"),
-           week = as.integer(format(observed_on_date, "%W")) + 1,
-           day = factor(weekdays(observed_on_date, T), 
-                        levels = rev(c("Sun", "Mon", "Tue", "Wed", "Thu", 
-                                       "Fri", "Sat"))),
-           mo.week.num= epiweek(observed_on_date) - epiweek(floor_date(observed_on_date, unit = "month"))+1) %>%
-    mutate(month.abbr = factor(case_when(
-        month == "01" ~ "Jan", 
-        month == "02" ~ "Feb", 
-        month == "03" ~ "Mar", 
-        month == "04" ~ "Apr", 
-        month == "05" ~ "May", 
-        month == "06" ~ "Jun",
-        month == "07" ~ "Jul", 
-        month == "08" ~ "Aug", 
-        month == "09" ~ "Sep", 
-        month == "10" ~ "Oct", 
-        month == "11" ~ "Nov", 
-        month == "12" ~ "Dec"
-    ), 
-    levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
-               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")))    
+    mutate(
+        phen = case_when(
+            flowering == 1 ~ "Flowering", 
+            is.na(flowering) & all == 1 ~ "Nonflowering",
+            TRUE ~ NA_character_
+            )
+        ) %>%
+    mutate(
+        month = format(observed_on_date, "%m"),
+        week = as.integer(format(observed_on_date, "%W")) + 1,
+        day = factor(weekdays(observed_on_date, T), 
+                     levels = rev(c("Sun", "Mon", "Tue", "Wed", "Thu",
+                                    "Fri", "Sat"))),
+        mo.week.num= epiweek(observed_on_date) - 
+            epiweek(floor_date(observed_on_date, unit = "month"))+1
+        ) %>%
+    mutate(
+        month.abbr = factor(case_when(
+            month == "01" ~ "Jan", 
+            month == "02" ~ "Feb", 
+            month == "03" ~ "Mar", 
+            month == "04" ~ "Apr", 
+            month == "05" ~ "May", 
+            month == "06" ~ "Jun",
+            month == "07" ~ "Jul", 
+            month == "08" ~ "Aug", 
+            month == "09" ~ "Sep", 
+            month == "10" ~ "Oct", 
+            month == "11" ~ "Nov", 
+            month == "12" ~ "Dec"
+            ), 
+            levels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                       "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+            ))    
 
 calendar_4x3_phen <- sanguinaria.combined.phen %>%
     ggplot(aes(x=mo.week.num, y=day, fill=phen)) + 
@@ -195,12 +220,15 @@ calendar_4x3_phen <- sanguinaria.combined.phen %>%
         legend.position = "bottom", 
         axis.title = element_blank(), 
         axis.text.x = element_blank(),
-        legend.key.size = unit(0.5, "cm")) + 
+        legend.key.size = unit(0.5, "cm")
+        ) + 
     coord_equal() + 
-    scale_fill_manual(values = c("#ffd700", "#86cc00"), 
-                      labels = c("Flowering", "Non-flowering", "None"), 
-                      name = element_blank(), 
-                      na.value = "#a6a6a6") + 
+    scale_fill_manual(
+        values = c("#ffd700", "#86cc00"), 
+        labels = c("Flowering", "Non-flowering", "None"), 
+        name = element_blank(), 
+        na.value = "#a6a6a6"
+        ) + 
     facet_wrap(vars(month.abbr), nrow=4) + 
     ggtitle("Bloodroot", "Sanguinaria canadensis")
 calendar_4x3_phen
@@ -217,7 +245,8 @@ waffle.calendar.faceted.species <- combined %>%
         "Number of observations", 
         option = "plasma", 
         direction = -1, 
-        end = .9) +
+        end = .9
+        ) +
     theme_minimal() + 
     theme(
         title = element_text(face="bold"),
@@ -227,10 +256,14 @@ waffle.calendar.faceted.species <- combined %>%
         legend.title = element_text(size = 10),
         legend.text = element_text(size=10),
         axis.title = element_blank(), 
-        axis.text.x = element_blank()) + 
+        axis.text.x = element_blank()
+        ) + 
     coord_equal() + 
-    facet_grid(cols = vars(month.abbr), rows = vars(scientific_name),
-               labeller = labeller(scientific_name = label_wrap_gen(10))) + 
+    facet_grid(
+        cols = vars(month.abbr), 
+        rows = vars(scientific_name),
+        labeller = labeller(scientific_name = label_wrap_gen(10))
+        ) + 
     labs(title="Illinois Spring Wildflower observations, select species: 2020") +
     guides(fill = guide_legend(title.position = "top"))
 
