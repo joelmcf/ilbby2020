@@ -16,8 +16,8 @@ cumulative_species <- ilbby %>%
     select(taxon_species_name, observed_on) %>%
     filter(taxon_species_name != "") %>%
     arrange(taxon_species_name, observed_on) %>%
-    mutate(observed_on = ymd(observed_on)) %>%
-    mutate(moyr = floor_date(observed_on, "month")) %>%
+    mutate(observed_on = ymd(observed_on),
+           moyr = floor_date(observed_on, "month")) %>%
     group_by(taxon_species_name) %>%
     mutate(id = row_number()) %>%
     filter(id == 1) %>%
@@ -26,8 +26,8 @@ cumulative_species <- ilbby %>%
     count(id) %>%
     ungroup() %>%
     arrange(moyr) %>%
-    mutate(cumsum = cumsum(n)) %>%
-    mutate(carryover = cumsum-n) %>%
+    mutate(cumsum = cumsum(n),
+           carryover = cumsum-n) %>%
     rename(a = n, b = carryover) %>%
     select(moyr, a, b) %>%
     filter(moyr >= "2016-1-1") %>%
@@ -44,7 +44,8 @@ cumulative_species <- ilbby %>%
 
 
 cumulative_plot <- ggplot(cumulative_species) +
-    geom_bar(aes(x = xvar, y = value, fill = name), stat = "identity", position = "stack", width = 1) +
+    geom_bar(aes(x = xvar, y = value, fill = name), 
+             stat = "identity", position = "stack", width = 1) +
     scale_fill_manual(labels = c("New species", "Running total"), 
                       values = c("green", "#a4a4a4")) +
     theme(legend.title = element_blank(), 
@@ -61,13 +62,13 @@ cumulative_plot <- ggplot(cumulative_species) +
                        label = comma) +
     scale_x_continuous(limits = c(0, 61),
                        breaks = seq(1, 60, 12), 
-                       labels = paste0(c("2016", "2017", "2018", "2019", "2020")),
+                       labels = c("2016", "2017", "2018", "2019", "2020"),
                        expand = c(0, 0)) +  
-    geom_vline(xintercept = 0.5, color = "black", size = .2) + 
-    geom_vline(xintercept = 12.5, color = "black", size = .2) + 
-    geom_vline(xintercept = 24.5, color = "black", size = .2) + 
-    geom_vline(xintercept = 36.5, color = "black", size = .2) + 
-    geom_vline(xintercept = 48.5, color = "black", size = .2)
+    geom_vline(xintercept = 0.5, size = .2) + 
+    geom_vline(xintercept = 12.5, size = .2) + 
+    geom_vline(xintercept = 24.5, size = .2) + 
+    geom_vline(xintercept = 36.5, size = .2) + 
+    geom_vline(xintercept = 48.5, size = .2)
 
 cumulative_plot
 
